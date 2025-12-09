@@ -84,6 +84,98 @@ export async function scrapeCustomSite(url, baseUrl = '', page) {
       data.sku = skuElement.textContent.trim();
     }
 
+    // // Extract images - get all images but filter intelligently
+    // // First try to find product image containers
+    // let imageContainer = document.querySelector('.product-images, .product-gallery, .product-photos, .gallery, [class*="image"], [class*="photo"]');
+    
+    // // If no specific container, use body but exclude header/footer
+    // if (!imageContainer) {
+    //   imageContainer = document.body;
+    // }
+    
+    // // Exclude related products sections
+    // const excludeSections = ['.related', '.similar', '.products', '.product-list', '[class*="related"]', '[class*="similar"]'];
+    // function isInExcludedSection(element) {
+    //   if (!element) return false;
+    //   for (const selector of excludeSections) {
+    //     if (element.closest(selector)) {
+    //       return true;
+    //     }
+    //   }
+    //   return false;
+    // }
+    
+    // const imageElements = imageContainer.querySelectorAll('img');
+    // imageElements.forEach((img) => {
+    //   // Skip if in excluded section
+    //   if (isInExcludedSection(img)) {
+    //     return;
+    //   }
+      
+    //   let src = img.src || img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || img.getAttribute('data-original') || img.getAttribute('data-large_image');
+    //   if (src && !src.includes('data:image') && !src.includes('placeholder')) {
+    //     const width = img.naturalWidth || img.width || 0;
+    //     const height = img.naturalHeight || img.height || 0;
+        
+    //     // Include images that are reasonably sized (likely product images)
+    //     // Lower threshold for custom sites as they might not have naturalWidth/Height set
+    //     if (width > 150 && height > 150 || width === 0 && height === 0) {
+    //       // If dimensions are 0, check if it's likely a product image by URL or parent container
+    //       const parent = img.closest('.product, [class*="product"], .gallery, [class*="gallery"], [class*="image"]');
+    //       const isLikelyProductImage = parent || src.includes('product') || src.includes('upload');
+          
+    //       if (width > 150 && height > 150 || isLikelyProductImage) {
+    //         // Convert relative URLs to absolute
+    //         if (src.startsWith('//')) {
+    //           src = 'https:' + src;
+    //         } else if (src.startsWith('/')) {
+    //           const urlObj = new URL(window.location.href);
+    //           src = urlObj.origin + src;
+    //         } else if (!src.startsWith('http')) {
+    //           const urlObj = new URL(window.location.href);
+    //           src = urlObj.origin + '/' + src;
+    //         }
+            
+    //         // Filter out common non-product images
+    //         if (!data.images.find(existingImg => existingImg.src === src) && 
+    //             !src.includes('logo') && 
+    //             !src.includes('icon') && 
+    //             !src.includes('banner') &&
+    //             !src.includes('avatar') &&
+    //             !src.includes('header') &&
+    //             !src.includes('footer') &&
+    //             !src.includes('related') &&
+    //             !src.includes('similar')) {
+    //           data.images.push({ src });
+    //         }
+    //       }
+    //     }
+    //   }
+    // });
+
+    // // Extract categories - look for category links (limit to first category)
+    // const categoryElements = document.querySelectorAll('a[href*="product-category"], a[href*="category"], .breadcrumb a, [class*="category"] a');
+    // let categoryCount = 0;
+    // categoryElements.forEach((cat) => {
+    //   if (categoryCount >= 1) return; // Limit to first category only
+    //   const catName = cat.textContent.trim();
+    //   if (catName && catName !== 'دسته:' && !data.categories.find(c => c.name === catName)) {
+    //     data.categories.push({ name: catName });
+    //     categoryCount++;
+    //   }
+    // });
+    
+    // // Also extract from text like "دسته: گجت ها و لوازم گیمینگ" (only first one)
+    // if (data.categories.length === 0) {
+    //   const allText = document.body.innerText;
+    //   const categoryMatch = allText.match(/دسته[:\s]+([^,\n]+)/i);
+    //   if (categoryMatch) {
+    //     const catName = categoryMatch[1].trim().split(',')[0]; // Only first category
+    //     if (catName && !data.categories.find(c => c.name === catName)) {
+    //       data.categories.push({ name: catName });
+    //     }
+    //   }
+    // }
 
     // Get all text once for multiple uses
     const allText = document.body.innerText || '';

@@ -15,7 +15,7 @@ function initWooCommerceAPI() {
 
   // The package exports an object with a nested default property
   const WooCommerceRestApi = WooCommercePackage.default?.default || WooCommercePackage.default || WooCommercePackage;
-  
+
   return new WooCommerceRestApi({
     url: url,
     consumerKey: consumerKey,
@@ -44,7 +44,7 @@ async function getExistingCategory(wcApi, categoryName) {
       const exactMatch = searchResponse.data.find(
         cat => cat.name.toLowerCase() === categoryName.toLowerCase()
       );
-      
+
       if (exactMatch) {
         console.log(`[Uploader] Found existing category: ${categoryName} (ID: ${exactMatch.id})`);
         return exactMatch.id;
@@ -73,7 +73,7 @@ async function processCategories(wcApi, categories) {
   }
 
   const categoryIds = [];
-  
+
   // Only process first category to avoid timeout
   const firstCategory = categories[0];
   if (firstCategory) {
@@ -122,38 +122,51 @@ export async function uploadProduct(productData) {
       wooCommerceProduct.regular_price = productPrice;
     }
 
-    // Add description if found
-    if (productData.description) {
-      wooCommerceProduct.description = productData.description;
+    // // Add description if found
+    // if (productData.description.length > 700) {
+    //   console.log('description is too long');
+
+    // }else {
+    //   wooCommerceProduct.description = productData.description;
+    // }
+
+    if (productData.description.length) {
+      if (productData.description.length > 700) {
+        console.log('description is too long');
+      } else {
+        wooCommerceProduct.description = productData.description;
+      }
     }
 
     // Add short description if found
-    if (productData.short_description) {
+    if (productData.short_description.length > 200) {
+      console.log('short description is too long');
+    } else {
       wooCommerceProduct.short_description = productData.short_description;
     }
 
     // Add SKU if found - check for duplicates first
-    // if (productData.sku) {
-    //   try {
-    //     // Check if SKU already exists
-    //     const existingProducts = await wcApi.get('products', {
-    //       sku: productData.sku,
-    //       per_page: 1,
-    //     });
-        
-    //     if (existingProducts.data && existingProducts.data.length > 0) {
-    //       console.warn(`[Uploader] SKU "${productData.sku}" already exists. Skipping SKU to avoid duplicate.`);
-    //       // Don't add SKU if it already exists - WooCommerce will auto-generate or we can skip it
-    //       // Alternatively, you could append a suffix: wooCommerceProduct.sku = `${productData.sku}-${Date.now()}`;
-    //     } else {
-    //       wooCommerceProduct.sku = productData.sku;
-    //     }
-    //   } catch (error) {
-    //     // If SKU check fails, try to add it anyway (might be a permission issue)
-    //     console.warn(`[Uploader] Could not check SKU existence, adding anyway: ${error.message}`);
-    //     wooCommerceProduct.sku = productData.sku;
-    //   }
-    // }
+    if (productData.sku) {
+      try {
+        // Check if SKU already exists
+        const existingProducts = await wcApi.get('products', {
+          sku: productData.sku,
+          per_page: 1,
+        });
+
+        if (existingProducts.data && existingProducts.data.length > 0) {
+          console.warn(`[Uploader] SKU "${productData.sku}" already exists. Skipping SKU to avoid duplicate.`);
+          // Don't add SKU if it already exists - WooCommerce will auto-generate or we can skip it
+          // Alternatively, you could append a suffix: wooCommerceProduct.sku = `${productData.sku}-${Date.now()}`;
+        } else {
+          wooCommerceProduct.sku = productData.sku;
+        }
+      } catch (error) {
+        // If SKU check fails, try to add it anyway (might be a permission issue)
+        console.warn(`[Uploader] Could not check SKU existence, adding anyway: ${error.message}`);
+        wooCommerceProduct.sku = productData.sku;
+      }
+    }
 
     // Add images if found
     if (productData.images && productData.images.length > 0) {
@@ -164,11 +177,6 @@ export async function uploadProduct(productData) {
     if (categoryIds.length > 0) {
       wooCommerceProduct.categories = categoryIds;
     }
-
-    // Add tags if found
-    // if (productData.tags && productData.tags.length > 0) {
-    //   wooCommerceProduct.tags = productData.tags;
-    // }
 
     // Add sale_price if available
     if (productData.sale_price) {
@@ -182,13 +190,29 @@ export async function uploadProduct(productData) {
         .map(f => f.trim())
         .filter(f => f && f.length > 0)
         .filter((f, index, self) => self.indexOf(f) === index); // Remove duplicates
-      
-      console.log(`[Uploader] Processing ${allFeatures.length} product features (ALL features will be uploaded)...`);
+
+      console.log(`[Uploader] Processing ${allFeatures.length} product features...`);
       console.log(`[Uploader] First 10 features:`, allFeatures.slice(0, 10).join(' | '));
       if (allFeatures.length > 10) {
         console.log(`[Uploader] ... and ${allFeatures.length - 10} more features`);
       }
-      
+
+      // NEW: Format features for dina_product_fields meta
+      const formattedFeatures = allFeatures.map((feature, index) => ({
+        ftitle: feature,
+        fdesc: '' // Empty description for now
+      }));
+
+      // Add dina_product_features meta data
+      wooCommerceProduct.meta_data = [
+        {
+          key: 'dina_product_features',
+          value: formattedFeatures
+        }
+      ];
+
+      console.log(`[Uploader] ✓ Prepared ${formattedFeatures.length} features for dina_product_fields meta`);
+
       // Convert features to WooCommerce attributes format
       // Create a single attribute "ویژگی های محصول" with ALL features as options - NO LIMIT
       wooCommerceProduct.attributes = [
@@ -200,19 +224,19 @@ export async function uploadProduct(productData) {
           variation: false // Not used for variations
         }
       ];
-      
+
       // Also add features to description as HTML for better display - ALL features
-      const featuresHTML = '<h3>ویژگی های محصول:</h3><ul>' + 
-        allFeatures.map(f => `<li>${f.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join('') + 
+      const featuresHTML = '<h3>ویژگی های محصول:</h3><ul>' +
+        allFeatures.map(f => `<li>${f.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join('') +
         '</ul>';
-      
+
       // Prepend features to description (features are most important)
       if (wooCommerceProduct.description) {
         wooCommerceProduct.description = featuresHTML + '<br><br>' + wooCommerceProduct.description;
       } else {
         wooCommerceProduct.description = featuresHTML;
       }
-      
+
       // Also add to short_description if it's empty or doesn't contain features
       if (!wooCommerceProduct.short_description || !wooCommerceProduct.short_description.includes('ویژگی')) {
         const shortFeatures = allFeatures.slice(0, 5).join('، ');
@@ -222,8 +246,8 @@ export async function uploadProduct(productData) {
           wooCommerceProduct.short_description = shortFeatures;
         }
       }
-      
-      console.log(`[Uploader] ✓ Added ALL ${allFeatures.length} product features as WooCommerce attributes`);
+
+      console.log(`[Uploader] ✓ Added ALL ${allFeatures.length} product features as WooCommerce attributes and meta data`);
     } else {
       console.warn('[Uploader] ⚠ No features found in product data');
     }
@@ -239,6 +263,7 @@ export async function uploadProduct(productData) {
       sku: wooCommerceProduct.sku || '(not set)',
       attributes: (wooCommerceProduct.attributes || []).length,
       features: productData.features?.length || 0,
+      has_dina_meta: !!(wooCommerceProduct.meta_data && wooCommerceProduct.meta_data.length > 0)
     });
 
     // Create product via API
@@ -272,6 +297,12 @@ export async function uploadProduct(productData) {
       const productId = response.data.id;
       console.log(`[Uploader] Product successfully created with ID: ${productId}`);
       console.log(`[Uploader] Product URL: ${response.data.permalink || 'N/A'}`);
+
+      // NEW: Update product meta separately if needed (fallback method)
+      if (wooCommerceProduct.meta_data && wooCommerceProduct.meta_data.length > 0) {
+        await updateProductMeta(wcApi, productId, wooCommerceProduct.meta_data);
+      }
+
       return productId;
     } else {
       throw new Error('Invalid response from WooCommerce API');
@@ -298,6 +329,41 @@ export async function uploadProduct(productData) {
     }
 
     throw error;
+  }
+}
+
+/**
+ * NEW: Update product meta data separately (fallback method)
+ */
+async function updateProductMeta(wcApi, productId, metaData) {
+  try {
+    console.log(`[Uploader] Updating meta data for product ${productId}...`);
+
+    // First, get current product data
+    const product = await wcApi.get(`products/${productId}`);
+    const currentMeta = product.data.meta_data || [];
+
+    // Merge existing meta with our new meta
+    const updatedMeta = [...currentMeta];
+
+    metaData.forEach(newMeta => {
+      const existingIndex = updatedMeta.findIndex(m => m.key === newMeta.key);
+      if (existingIndex >= 0) {
+        updatedMeta[existingIndex] = newMeta;
+      } else {
+        updatedMeta.push(newMeta);
+      }
+    });
+
+    // Update product with merged meta data
+    await wcApi.put(`products/${productId}`, {
+      meta_data: updatedMeta
+    });
+
+    console.log(`[Uploader] ✓ Meta data updated successfully for product ${productId}`);
+  } catch (error) {
+    console.error(`[Uploader] Error updating meta data:`, error.message);
+    // Don't throw - this is a non-critical operation
   }
 }
 

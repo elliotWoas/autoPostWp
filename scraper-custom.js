@@ -177,9 +177,132 @@ export async function scrapeCustomSite(url, baseUrl = '', page) {
     // Clean up features - remove duplicates and empty items
     data.features = [...new Set(data.features.filter(f => f && f.length > 3))];
 
+// ====== IMAGE EXTRACTION SECTION (UPDATED FOR YOUR SPECIFIC HTML) ======
+// Helper function to normalize image URLs
+const normalizeImageUrl = (url) => {
+  if (!url || url.trim() === '') return '';
+  
+  let normalized = url.trim();
+  
+  // Remove quotes that might be part of the URL string
+  normalized = normalized.replace(/^['"]|['"]$/g, '');
+  
+  // Handle protocol-relative URLs (starting with //)
+  if (normalized.startsWith('//')) {
+      normalized = 'https:' + normalized;
+  }
+  // Handle root-relative URLs (starting with /)
+  else if (normalized.startsWith('/')) {
+      const base = baseUrl || window.location.origin;
+      normalized = base + normalized;
+  }
+  // Handle relative URLs (without http or //)
+  else if (!normalized.startsWith('http') && !normalized.startsWith('data:')) {
+      const base = baseUrl || window.location.origin;
+      normalized = base + '/' + normalized;
+  }
+  
+  return normalized;
+};
+
+// Helper function to validate product images
+const isValidProductImage = (url) => {
+  if (!url) return false;
+  
+  const lowerUrl = url.toLowerCase();
+  
+  // Skip data URLs (base64 encoded images)
+  if (lowerUrl.startsWith('data:image')) {
+      return false;
+  }
+  
+  // Check for valid image extensions
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.svg'];
+  return imageExtensions.some(ext => lowerUrl.includes(ext));
+};
+
+// Extract images ONLY from the gallery-single div
+const allImageUrls = new Set(); // Use Set to avoid duplicates
+
+// Find the specific gallery container
+const galleryContainer = document.querySelector('.gallery-single');
+
+if (galleryContainer) {
+  // 1. Extract from CSS background-image properties inside the gallery
+  const bgImageElements = galleryContainer.querySelectorAll('[style*="background-image"]');
+  bgImageElements.forEach(element => {
+      const style = element.getAttribute('style');
+      if (style && style.includes('background-image')) {
+          const match = style.match(/background-image:\s*url\(['"]?([^'"\)]+)['"]?\)/i);
+          if (match && match[1]) {
+              const normalizedUrl = normalizeImageUrl(match[1]);
+              if (isValidProductImage(normalizedUrl)) {
+                  allImageUrls.add(normalizedUrl);
+              }
+          }
+      }
+  });
+
+  // 2. Specifically target .v-image__image--cover elements inside the gallery
+  const specificImageElements = galleryContainer.querySelectorAll('.v-image__image--cover, .box-gallery [style*="background-image"]');
+  specificImageElements.forEach(element => {
+      const style = element.getAttribute('style');
+      if (style && style.includes('background-image')) {
+          const match = style.match(/background-image:\s*url\(['"]?([^'"\)]+)['"]?\)/i);
+          if (match && match[1]) {
+              const normalizedUrl = normalizeImageUrl(match[1]);
+              if (isValidProductImage(normalizedUrl)) {
+                  allImageUrls.add(normalizedUrl);
+              }
+          }
+      }
+  });
+
+  // 3. Extract from standard <img> elements inside the gallery only (if any)
+  const imgElements = galleryContainer.querySelectorAll('img');
+  imgElements.forEach(img => {
+      // Check multiple possible sources in order of preference
+      const sources = [
+          img.src,
+          img.getAttribute('data-src'),
+          img.getAttribute('data-lazy-src'),
+          img.getAttribute('data-original'),
+          img.getAttribute('data-large_image')
+      ];
+      
+      for (const src of sources) {
+          if (src && src.trim()) {
+              const normalizedUrl = normalizeImageUrl(src);
+              if (isValidProductImage(normalizedUrl)) {
+                  allImageUrls.add(normalizedUrl);
+                  break; // Use the first valid source
+              }
+          }
+      }
+  });
+
+  // 4. Extract from data-src attributes on other elements inside gallery
+  const dataSrcElements = galleryContainer.querySelectorAll('[data-src]:not(img)');
+  dataSrcElements.forEach(element => {
+      const src = element.getAttribute('data-src');
+      if (src) {
+          const normalizedUrl = normalizeImageUrl(src);
+          if (isValidProductImage(normalizedUrl)) {
+              allImageUrls.add(normalizedUrl);
+          }
+      }
+  });
+}
+
+// Convert Set to array and add to data object
+data.images = Array.from(allImageUrls).map(url => ({ 
+  src: url,
+  alt: data.name || 'Product Image'
+}));
+// ====== END OF IMAGE EXTRACTION SECTION ======
+
     return data;
   }, baseUrl);
 
   return productData;
 }
-

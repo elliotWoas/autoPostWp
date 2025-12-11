@@ -1,5 +1,5 @@
 import WooCommercePackage from '@woocommerce/woocommerce-rest-api';
-
+import imageUploader from './utils/image-uploader.js';
 /**
  * Initialize WooCommerce API client
  * @returns {Object} Configured API client
@@ -168,10 +168,32 @@ export async function uploadProduct(productData) {
       }
     }
 
-    // Add images if found
-    if (productData.images && productData.images.length > 0) {
-      wooCommerceProduct.images = productData.images;
-    }
+// Add images if found — process (remove watermark) and upload to WP media, then attach by ID (preferred)
+if (productData.images && productData.images.length > 0) {
+  try {
+    console.log('[Uploader] Processing and uploading product images (removing watermarks)...');
+    const uploaded = await imageUploader.processAndUploadImages(productData.images, {
+      // watermarkOptions: tweak width/height/margin if needed
+      width: 120,
+      height: 50,
+      margin: 10,
+      backgroundColor: '#FFFFFF'
+    });
+
+    // Prefer using media ID when available; fallback to src URL
+    const wcImages = uploaded.map(u => {
+      if (u.id) return { id: u.id };
+      return { src: u.src };
+    });
+
+    wooCommerceProduct.images = wcImages;
+    console.log(`[Uploader] Attached ${wcImages.length} images to product payload`);
+  } catch (err) {
+    console.warn(`[Uploader] Image processing/upload failed — falling back to original images: ${err.message}`);
+    // fallback: attach original image URLs (if any)
+    wooCommerceProduct.images = productData.images;
+  }
+}
 
     // Add categories if found
     if (categoryIds.length > 0) {
@@ -212,40 +234,6 @@ export async function uploadProduct(productData) {
       ];
 
       console.log(`[Uploader] ✓ Prepared ${formattedFeatures.length} features for dina_product_fields meta`);
-
-      // Convert features to WooCommerce attributes format
-      // Create a single attribute "ویژگی های محصول" with ALL features as options - NO LIMIT
-      wooCommerceProduct.attributes = [
-        {
-          id: 0, // 0 means new attribute
-          name: 'ویژگی های محصول',
-          options: allFeatures, // ALL features - no limit
-          visible: true, // Show in Additional Information tab
-          variation: false // Not used for variations
-        }
-      ];
-
-      // Also add features to description as HTML for better display - ALL features
-      const featuresHTML = '<h3>ویژگی های محصول:</h3><ul>' +
-        allFeatures.map(f => `<li>${f.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join('') +
-        '</ul>';
-
-      // Prepend features to description (features are most important)
-      if (wooCommerceProduct.description) {
-        wooCommerceProduct.description = featuresHTML + '<br><br>' + wooCommerceProduct.description;
-      } else {
-        wooCommerceProduct.description = featuresHTML;
-      }
-
-      // Also add to short_description if it's empty or doesn't contain features
-      if (!wooCommerceProduct.short_description || !wooCommerceProduct.short_description.includes('ویژگی')) {
-        const shortFeatures = allFeatures.slice(0, 5).join('، ');
-        if (wooCommerceProduct.short_description) {
-          wooCommerceProduct.short_description = shortFeatures + ' - ' + wooCommerceProduct.short_description;
-        } else {
-          wooCommerceProduct.short_description = shortFeatures;
-        }
-      }
 
       console.log(`[Uploader] ✓ Added ALL ${allFeatures.length} product features as WooCommerce attributes and meta data`);
     } else {

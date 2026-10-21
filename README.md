@@ -120,12 +120,17 @@ main.js
    npm install
    ```
 
-3. **Create `.env` file**
+3. **Install Puppeteer's Chrome browser** (if it was not downloaded during `npm install`)
+   ```bash
+   npm run install:browser
+   ```
+
+4. **Create `.env` file**
    ```bash
    cp .env.example .env
    ```
 
-4. **Configure `.env` file** (see Configuration section)
+5. **Configure `.env` file** (see Configuration section)
 
 ## ⚙️ Configuration
 
@@ -480,4 +485,3 @@ MIT
 ## 👤 Author
 
 Created for automated product migration from e-commerce sites to WooCommerce.
-

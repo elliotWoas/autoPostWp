@@ -5,6 +5,7 @@
   "main": "main.js",
   "type": "module",
   "scripts": {
+    "install:browser": "puppeteer browsers install chrome",
     "start": "node main.js"
   },
   "keywords": [

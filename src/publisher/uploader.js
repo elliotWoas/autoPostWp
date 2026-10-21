@@ -1,5 +1,5 @@
 import WooCommercePackage from '@woocommerce/woocommerce-rest-api';
-import imageUploader from './utils/image-uploader.js';
+import imageUploader from '../utils/image-uploader.js';
 /**
  * Initialize WooCommerce API client
  * @returns {Object} Configured API client

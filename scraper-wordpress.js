@@ -108,26 +108,26 @@ export async function scrapeWordPressSite(url, baseUrl = '', page) {
     }
 
     // Extract description - scoped to product container
-    let descElement = productContainer.querySelector('.description, .product-desc, .product-details, [class*="description"], [class*="details"], #description, .woocommerce-product-details__short-description, [itemprop="description"]');
+    let descElement = productContainer.querySelector('.woocommerce-Tabs-panel, .description, .product-desc, .product-details, [class*="description"], [class*="details"], #description, .woocommerce-product-details__short-description, [itemprop="description"]');
     if (descElement && !isInExcludedSection(descElement) && !descElement.closest('.related, .upsells, .cross-sells')) {
       data.description = descElement.innerHTML.trim();
     }
 
     // Extract short description - scoped to product container
-    let shortDescElement = productContainer.querySelector('.excerpt, .summary, .short-desc, [class*="excerpt"], [class*="summary"], .woocommerce-product-details__short-description');
-    if (shortDescElement && !isInExcludedSection(shortDescElement)) {
-      // Get both HTML and text - HTML for features extraction, text for short_description
-      data.short_description = shortDescElement.innerHTML.trim() || shortDescElement.textContent.trim();
-    }
+    // let shortDescElement = productContainer.querySelector('.excerpt, .summary, .short-desc, [class*="excerpt"], [class*="summary"], .woocommerce-product-details__short-description');
+    // if (shortDescElement && !isInExcludedSection(shortDescElement)) {
+    //   // Get both HTML and text - HTML for features extraction, text for short_description
+    //   data.short_description = shortDescElement.innerHTML.trim() || shortDescElement.textContent.trim();
+    // }
 
     // Extract SKU - scoped to product container
-    let skuElement = productContainer.querySelector('[data-sku], [itemprop="sku"], .sku-value, [class*="sku"], .sku, .product_meta .sku');
-    if (skuElement && !isInExcludedSection(skuElement)) {
-      data.sku = skuElement.textContent.trim();
-    }
-
+    // let skuElement = productContainer.querySelector('[data-sku], [itemprop="sku"], .sku-value, [class*="sku"], .sku, .product_meta .sku');
+    // if (skuElement && !isInExcludedSection(skuElement)) {
+    //   data.sku = skuElement.textContent.trim();
+    // }
+    // , [class*="gallery"], [class*="images"]
     // Extract images - ONLY from main product gallery, exclude related products
-    let galleryContainer = productContainer.querySelector('.product-images, .woocommerce-product-gallery, .product-gallery, .product-photos, [class*="gallery"], [class*="images"]');
+    let galleryContainer = productContainer.querySelector('.product-images, .woocommerce-product-gallery, .product-gallery, .product-photos');
     if (!galleryContainer) {
       galleryContainer = productContainer;
     }

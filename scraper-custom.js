@@ -244,7 +244,7 @@ if (galleryContainer) {
   });
 
   // 2. Specifically target .v-image__image--cover elements inside the gallery
-  const specificImageElements = galleryContainer.querySelectorAll('.v-image__image--cover, .box-gallery [style*="background-image"]');
+  const specificImageElements = galleryContainer.querySelectorAll('.v-image__image, .v-image__image--cover, .box-gallery [style*="background-image"]');
   specificImageElements.forEach(element => {
       const style = element.getAttribute('style');
       if (style && style.includes('background-image')) {

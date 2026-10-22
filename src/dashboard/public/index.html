@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KianSmart ⇄ TehranJanebi Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="header-container">
+        <div class="brand">
+          <div class="brand-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <h1>E-Commerce Control Panel</h1>
+            <p class="subtitle">KianSmart ⇄ TehranJanebi Automation & Reconciliation</p>
+          </div>
+        </div>
+
+        <!-- Main View Switcher Tabs -->
+        <nav class="main-nav">
+          <button class="nav-btn active" data-view="reconciliationView">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <span>Inventory Reconciliation</span>
+          </button>
+          <button class="nav-btn" data-view="publisherView">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+              <polyline points="16 6 12 2 8 6"></polyline>
+              <line x1="12" y1="2" x2="12" y2="15"></line>
+            </svg>
+            <span>Publish Products</span>
+          </button>
+        </nav>
+
+        <div class="header-status">
+          <div class="status-indicator" id="connectionStatus">
+            <span class="status-dot"></span>
+            <span class="status-text">System Ready</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Universal Alert Banner -->
+      <div id="alertBox" class="alert-banner" style="display: none;">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-content">
+          <h4 id="alertTitle">Notice</h4>
+          <p id="alertMessage"></p>
+        </div>
+        <button class="alert-close" onclick="closeAlert()">×</button>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- VIEW 1: INVENTORY RECONCILIATION                             -->
+      <!-- ============================================================ -->
+      <div id="reconciliationView" class="view-panel active">
+        <!-- View Header & Actions -->
+        <div class="view-header">
+          <div>
+            <h2>Inventory Reconciliation</h2>
+            <p class="view-subtitle">Compare out-of-stock products on KianSmart against TehranJanebi wholesale availability.</p>
+          </div>
+          <button id="checkInventoryBtn" class="btn btn-primary">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            <span class="btn-label">Check Inventory</span>
+            <span class="spinner" id="btnSpinner" style="display:none;"></span>
+          </button>
+        </div>
+
+        <!-- Metrics Cards Grid -->
+        <section class="metrics-grid">
+          <div class="metric-card card-kian">
+            <div class="metric-header">
+              <span class="metric-title">KianSmart Out-of-Stock</span>
+              <span class="metric-badge">KianSmart</span>
+            </div>
+            <div class="metric-value" id="statKianOutOfStock">-</div>
+            <div class="metric-footer">Products needing restock</div>
+          </div>
+
+          <div class="metric-card card-opportunity">
+            <div class="metric-header">
+              <span class="metric-title">Available on TehranJanebi</span>
+              <span class="metric-badge badge-success">Restock Opportunities</span>
+            </div>
+            <div class="metric-value text-success" id="statOpportunities">-</div>
+            <div class="metric-footer">Available from wholesaler</div>
+          </div>
+
+          <div class="metric-card card-unavailable">
+            <div class="metric-header">
+              <span class="metric-title">Unavailable on Both</span>
+              <span class="metric-badge badge-muted">Out of Stock</span>
+            </div>
+            <div class="metric-value text-muted" id="statUnavailableBoth">-</div>
+            <div class="metric-footer">Cannot be ordered yet</div>
+          </div>
+
+          <div class="metric-card card-missing">
+            <div class="metric-header">
+              <span class="metric-title">Missing on TehranJanebi</span>
+              <span class="metric-badge badge-warning">Unmatched SKU</span>
+            </div>
+            <div class="metric-value text-warning" id="statMissingTJ">-</div>
+            <div class="metric-footer">SKU not in wholesaler catalog</div>
+          </div>
+        </section>
+
+        <!-- Meta Bar -->
+        <div class="meta-bar">
+          <div class="meta-item">
+            <strong>Last Check:</strong>
+            <span id="lastCheckTimestamp">No check performed yet</span>
+          </div>
+          <div class="meta-item" id="reviewedCounterWrap" style="display: none;">
+            <strong>Reviewed for Purchase:</strong>
+            <span id="reviewedCounter">0</span> items
+          </div>
+        </div>
+
+        <!-- Table Toolbar & Filters -->
+        <section class="table-section">
+          <div class="table-toolbar">
+            <div class="tabs">
+              <button class="tab-btn active" data-tab="opportunities">
+                Restock Opportunities
+                <span class="tab-count" id="countTabOpportunities">0</span>
+              </button>
+              <button class="tab-btn" data-tab="unavailable">
+                Unavailable on Both
+                <span class="tab-count" id="countTabUnavailable">0</span>
+              </button>
+              <button class="tab-btn" data-tab="missing">
+                Missing on TehranJanebi
+                <span class="tab-count" id="countTabMissing">0</span>
+              </button>
+              <button class="tab-btn" data-tab="unmatched">
+                Missing SKUs
+                <span class="tab-count" id="countTabUnmatched">0</span>
+              </button>
+            </div>
+
+            <div class="toolbar-actions">
+              <div class="search-box">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="searchInput" placeholder="Search by name or SKU...">
+              </div>
+              <button id="exportCsvBtn" class="btn btn-outline" title="Export current view to CSV">
+                📥 Export CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Inventory Table -->
+          <div class="table-container">
+            <table class="data-table" id="inventoryTable">
+              <thead>
+                <tr>
+                  <th style="width: 60px; text-align: center;">Review</th>
+                  <th class="sortable" data-sort="name">Product Name <span class="sort-icon">↕</span></th>
+                  <th class="sortable" data-sort="sku" style="width: 170px;">SKU <span class="sort-icon">↕</span></th>
+                  <th style="width: 140px;">KianSmart Status</th>
+                  <th style="width: 160px;">Wholesale Availability</th>
+                  <th class="sortable" data-sort="quantity" style="width: 130px; text-align: center;">Wholesale Qty <span class="sort-icon">↕</span></th>
+                  <th style="width: 160px; text-align: center;">Wholesale Link</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody">
+                <tr class="empty-row">
+                  <td colspan="7">
+                    <div class="empty-state">
+                      <div class="empty-state-icon">🔍</div>
+                      <h3>Ready to Reconcile</h3>
+                      <p>Click "Check Inventory" above to compare out-of-stock items with TehranJanebi.</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- VIEW 2: PRODUCT PUBLISHER (MULTI-URL BATCH)                  -->
+      <!-- ============================================================ -->
+      <div id="publisherView" class="view-panel">
+        <div class="view-header">
+          <div>
+            <h2>Product Publisher</h2>
+            <p class="view-subtitle">Scrape products from TehranJanebi or supported WordPress sites and publish them directly to KianSmart WooCommerce store.</p>
+          </div>
+        </div>
+
+        <!-- Multi-URL Input Box -->
+        <section class="publisher-card">
+          <div class="publisher-form">
+            <label for="publishUrlsInput" class="form-label">
+              <strong>Product URLs to Scrape & Publish</strong>
+              <span class="label-hint">(Enter one URL per line)</span>
+            </label>
+            <textarea
+              id="publishUrlsInput"
+              class="url-textarea"
+              rows="6"
+              placeholder="https://www.tehranjanebi.com/product/PSH954-ProOne-Rechargeable-Shaver/&#10;https://rezonal.co/product/clipper-titan-plus/"
+            ></textarea>
+
+            <div class="publisher-actions">
+              <button id="startPublishBtn" class="btn btn-primary">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                  <polyline points="16 6 12 2 8 6"></polyline>
+                  <line x1="12" y1="2" x2="12" y2="15"></line>
+                </svg>
+                <span class="publish-btn-label">Start Publishing</span>
+                <span class="spinner" id="publishSpinner" style="display: none;"></span>
+              </button>
+              <button id="sampleUrlsBtn" class="btn btn-outline" type="button">Paste Sample URL</button>
+              <button id="clearUrlsBtn" class="btn btn-outline" type="button">Clear</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Publish Results Section -->
+        <section class="table-section" style="margin-top: 1.5rem;">
+          <div class="table-toolbar">
+            <div class="tabs">
+              <span style="font-weight: 700; font-size: 0.95rem;">Publishing Results</span>
+            </div>
+            <div id="publishSummaryStats" style="display: none; gap: 0.75rem; font-size: 0.85rem;">
+              <span class="badge badge-success" id="publishSuccessCount">0 Succeeded</span>
+              <span class="badge badge-outofstock" id="publishFailedCount">0 Failed</span>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table" id="publisherTable">
+              <thead>
+                <tr>
+                  <th style="width: 100px;">Status</th>
+                  <th>Product Name</th>
+                  <th style="width: 100px;">Product ID</th>
+                  <th style="width: 140px;">SKU</th>
+                  <th style="width: 120px;">Price</th>
+                  <th style="width: 80px; text-align: center;">Images</th>
+                  <th>Source URL / Details</th>
+                </tr>
+              </thead>
+              <tbody id="publisherTableBody">
+                <tr class="empty-row">
+                  <td colspan="7">
+                    <div class="empty-state">
+                      <div class="empty-state-icon">🚀</div>
+                      <h3>No Products Published Yet</h3>
+                      <p>Enter one or more product URLs above and click "Start Publishing".</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>KianSmart ⇄ TehranJanebi Automation & Reconciliation System • Read-only reconciliation • Manual review and verified publishing</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

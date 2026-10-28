@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "install:browser": "puppeteer browsers install chrome",
-    "start": "node main.js"
+    "start": "node main.js",
+    "dashboard": "node src/dashboard/server.js",
+    "test": "node --test tests/**/*.test.js"
   },
   "keywords": [
     "scraper",

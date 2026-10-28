@@ -172,6 +172,12 @@ node main.js https://rezonal.co/product/clipper-titan-plus/
 
 # Custom-coded site
 node main.js https://www.tehranjanebi.com/product/PSH954-ProOne-Rechargeable-Shaver/
+
+### Inventory Reconciliation Dashboard
+
+`ash
+npm run dashboard
+``nOpen http://127.0.0.1:3000 in your browser.
 ```
 
 ### Output
